@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影視鏡頭語言大百科 | 完整知識與內建模擬器</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cinematic: {
+                            dark: '#0f172a',    // Slate 900
+                            card: '#1e293b',    // Slate 800
+                            accent: '#f59e0b',  // Amber 500
+                            light: '#cbd5e1',   // Slate 300
+                            highlight: '#38bdf8'// Sky 400
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .card-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .hidden-content { display: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 攝影機模擬器自訂動畫 */
+        @keyframes handheld {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1.05); }
+            20% { transform: translate(-3px, 4px) rotate(-0.5deg) scale(1.05); }
+            40% { transform: translate(2px, -3px) rotate(0.5deg) scale(1.05); }
+            60% { transform: translate(-4px, -1px) rotate(-0.2deg) scale(1.05); }
+            80% { transform: translate(3px, 3px) rotate(0.3deg) scale(1.05); }
+            100% { transform: translate(0, 0) rotate(0deg) scale(1.05); }
+        }
+        .anim-handheld {
+            animation: handheld 1.5s infinite ease-in-out;
+        }
+        .transition-camera {
+            transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* 九宮格參考線 */
+        .grid-guide {
+            background-image: 
+                linear-gradient(to right, transparent 33.33%, rgba(255,255,255,0.15) 33.33%, rgba(255,255,255,0.15) 33.5%, transparent 33.5%, transparent 66.66%, rgba(255,255,255,0.15) 66.66%, rgba(255,255,255,0.15) 66.8%, transparent 66.8%),
+                linear-gradient(to bottom, transparent 33.33%, rgba(255,255,255,0.15) 33.33%, rgba(255,255,255,0.15) 33.5%, transparent 33.5%, transparent 66.66%, rgba(255,255,255,0.15) 66.66%, rgba(255,255,255,0.15) 66.8%, transparent 66.8%);
+        }
+        
+        /* Tailwind fade-in 動畫 */
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-cinematic-dark text-cinematic-light font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列 -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-video text-cinematic-accent text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-white tracking-wider">影視鏡頭語言大百科</h1>
+            </div>
+            <p class="hidden md:block text-sm text-slate-400">跨越虛構與紀實的敘事全書</p>
+        </div>
+        
+        <!-- 標籤導覽列 (五大分類) -->
+        <nav class="container mx-auto px-4 flex overflow-x-auto hide-scrollbar gap-2 pb-0 pt-2">
+            <button onclick="switchTab('lab')" id="tab-lab" class="tab-btn active shrink-0 px-4 py-3 rounded-t-lg bg-slate-800 text-cinematic-accent border-b-2 border-cinematic-accent font-medium transition-colors">
+                <i class="fas fa-play-circle mr-2 animate-pulse"></i>鏡頭實驗室
+            </button>
+            <button onclick="switchTab('core')" id="tab-core" class="tab-btn shrink-0 px-4 py-3 rounded-t-lg text-slate-400 hover:text-white hover:bg-slate-800 font-medium transition-colors border-b-2 border-transparent">
+                <i class="fas fa-camera-retro mr-2"></i>核心維度
+            </button>
+            <button onclick="switchTab('fiction')" id="tab-fiction" class="tab-btn shrink-0 px-4 py-3 rounded-t-lg text-slate-400 hover:text-white hover:bg-slate-800 font-medium transition-colors border-b-2 border-transparent">
+                <i class="fas fa-film mr-2"></i>虛構類型
+            </button>
+            <button onclick="switchTab('nonfiction')" id="tab-nonfiction" class="tab-btn shrink-0 px-4 py-3 rounded-t-lg text-slate-400 hover:text-white hover:bg-slate-800 font-medium transition-colors border-b-2 border-transparent">
+                <i class="fas fa-microphone-alt mr-2"></i>紀實與訪談
+            </button>
+            <button onclick="switchTab('advanced')" id="tab-advanced" class="tab-btn shrink-0 px-4 py-3 rounded-t-lg text-slate-400 hover:text-white hover:bg-slate-800 font-medium transition-colors border-b-2 border-transparent">
+                <i class="fas fa-magic mr-2"></i>進階美學
+            </button>
+        </nav>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        
+        <!-- ================= SECTION 0: 鏡頭實驗室 (動畫模擬器) ================= -->
+        <section id="sec-lab" class="tab-content block animate-fade-in">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-white mb-2">🎬 鏡頭實驗室 (Camera Simulator)</h2>
+                <p class="text-slate-400">點擊下方控制台的按鈕，觀看觀景窗內的即時攝影機運動模擬。學完理論後可以隨時回來這裡驗證！</p>
+            </div>
+
+            <!-- 模擬器區域 -->
+            <div class="bg-slate-800 rounded-2xl p-4 md:p-6 border border-slate-700 shadow-2xl max-w-4xl mx-auto">
+                
+                <!-- 虛擬觀景窗 (Viewport) -->
+                <div class="relative w-full aspect-video bg-sky-900 rounded-lg overflow-hidden border-2 border-black shadow-inner mb-6">
+                    
+                    <!-- 攝影機鏡頭容器 (施加變形的對象) -->
+                    <div id="camera-lens" class="absolute inset-0 w-full h-full origin-center transition-camera">
+                        
+                        <!-- 背景層 (遠山) -->
+                        <div class="absolute inset-0 flex items-end justify-center pb-20 opacity-40">
+                            <div class="w-64 h-64 bg-slate-700 rounded-full -mb-32 mr-20"></div>
+                            <div class="w-96 h-96 bg-slate-800 rounded-full -mb-48 absolute right-10"></div>
+                        </div>
+
+                        <!-- 背景人物 (B角 - 供焦點游移用) -->
+                        <div id="subject-bg" class="absolute bottom-1/4 right-1/4 transition-all duration-1000 blur-[3px] opacity-80">
+                            <div class="flex flex-col items-center transform scale-75">
+                                <div class="w-12 h-12 bg-rose-800 rounded-full mb-1"></div>
+                                <div class="w-20 h-28 bg-rose-900 rounded-t-3xl"></div>
+                            </div>
+                        </div>
+
+                        <!-- 前景人物 (A角 - 主角) -->
+                        <div id="subject-fg" class="absolute bottom-10 left-1/3 transition-all duration-1000 blur-none">
+                            <div class="flex flex-col items-center">
+                                <div class="w-16 h-16 bg-cinematic-accent rounded-full mb-1 shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-user text-2xl text-amber-900"></i>
+                                </div>
+                                <div class="w-28 h-40 bg-amber-600 rounded-t-3xl shadow-lg relative overflow-hidden">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 觀景窗 UI 疊加層 (不隨鏡頭移動) -->
+                    <div class="absolute inset-0 grid-guide pointer-events-none z-10"></div>
+                    
+                    <div class="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/50 px-3 py-1 rounded-full">
+                        <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span class="text-white text-xs font-mono font-bold tracking-widest">REC 00:00:<span id="tc-sec">01</span></span>
+                    </div>
+
+                    <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end z-20 text-white/70 font-mono text-xs pointer-events-none">
+                        <div>ISO 800<br>F/2.8<br>24fps</div>
+                        <div class="text-right">
+                            <span id="active-effect-text" class="text-cinematic-highlight font-bold text-sm bg-black/60 px-2 py-1 rounded">標準視角 (Normal)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 焦點框模擬 -->
+                    <div id="focus-box" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-green-500 z-20 transition-all duration-1000 opacity-50"></div>
+                </div>
+
+                <!-- 控制台 -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <button onclick="playSim('dolly')" class="sim-btn bg-slate-700 hover:bg-cinematic-accent hover:text-slate-900 text-white py-2 px-3 rounded text-sm font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-search-plus text-lg"></i>推鏡頭
+                    </button>
+                    <button onclick="playSim('pan')" class="sim-btn bg-slate-700 hover:bg-cinematic-accent hover:text-slate-900 text-white py-2 px-3 rounded text-sm font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-arrows-alt-h text-lg"></i>橫搖
+                    </button>
+                    <button onclick="playSim('dutch')" class="sim-btn bg-slate-700 hover:bg-cinematic-accent hover:text-slate-900 text-white py-2 px-3 rounded text-sm font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-undo transform -rotate-45 text-lg"></i>荷蘭角
+                    </button>
+                    <button onclick="playSim('handheld')" class="sim-btn bg-slate-700 hover:bg-cinematic-accent hover:text-slate-900 text-white py-2 px-3 rounded text-sm font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-hand-paper text-lg"></i>手持攝影
+                    </button>
+                    <button onclick="playSim('rack')" class="sim-btn bg-slate-700 hover:bg-cinematic-accent hover:text-slate-900 text-white py-2 px-3 rounded text-sm font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-exchange-alt text-lg"></i>焦點游移
+                    </button>
+                    <button onclick="playSim('reset')" class="sim-btn bg-red-900 hover:bg-red-600 text-white py-2 px-3 rounded text-sm font-bold transition flex flex-col items-center gap-1 border border-red-700">
+                        <i class="fas fa-stop text-lg"></i>復原視角
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 1: 核心維度 (完整內容還原) ================= -->
+        <section id="sec-core" class="tab-content hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">一、 鏡頭語言的核心維度</h2>
+                <p class="text-slate-400">所有影視作品的通用基礎。點擊知識卡片展開詳細說明與實戰範例。</p>
+            </div>
+
+            <!-- 景別 -->
+            <h3 class="text-xl font-semibold text-cinematic-accent mb-4 border-l-4 border-cinematic-accent pl-3">景別 (Shot Size)：距離的心理學</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                <div class="bg-cinematic-card rounded-xl p-6 cursor-pointer card-transition hover:-translate-y-1 hover:shadow-xl border border-slate-700" onclick="toggleCard(this)">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-lg font-bold text-white">大特寫 / 特寫</h4>
+                        <span class="bg-slate-700 text-xs px-2 py-1 rounded text-slate-300">ECU / CU</span>
+                    </div>
+                    <p class="text-sm mb-4">強迫觀眾直視角色內心，放大微小情緒。</p>
+                    <div class="hidden-content text-sm text-slate-300 border-t border-slate-600 pt-3 mt-2">
+                        <strong class="text-cinematic-accent">🎬 實戰範例：</strong><br>
+                        捕捉眼角的淚水、顫抖的嘴唇。審問戲中，鏡頭切換到犯人的大特寫，緊張與心虛不言而喻。
+                    </div>
+                    <div class="text-center mt-2 text-slate-500 text-xs reveal-hint"><i class="fas fa-chevron-down"></i> 點擊展開範例</div>
+                </div>
+                <div class="bg-cinematic-card rounded-xl p-6 cursor-pointer card-transition hover:-translate-y-1 hover:shadow-xl border border-slate-700" onclick="toggleCard(this)">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-lg font-bold text-white">中景</h4>
+                        <span class="bg-slate-700 text-xs px-2 py-1 rounded text-slate-300">MS</span>
+                    </div>
+                    <p class="text-sm mb-4">最接近人類日常對話的距離。</p>
+                    <div class="hidden-content text-sm text-slate-300 border-t border-slate-600 pt-3 mt-2">
+                        <strong class="text-cinematic-accent">🎬 實戰範例：</strong><br>
+                        用來交代角色的上半身動作與神態，是劇情片與訪談中最常建立穩固對話關係的景別。
+                    </div>
+                    <div class="text-center mt-2 text-slate-500 text-xs reveal-hint"><i class="fas fa-chevron-down"></i> 點擊展開範例</div>
+                </div>
+                <div class="bg-cinematic-card rounded-xl p-6 cursor-pointer card-transition hover:-translate-y-1 hover:shadow-xl border border-slate-700" onclick="toggleCard(this)">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-lg font-bold text-white">全景 / 遠景</h4>
+                        <span class="bg-slate-700 text-xs px-2 py-1 rounded text-slate-300">FS / LS</span>
+                    </div>
+                    <p class="text-sm mb-4">呈現角色與環境的關係，表達孤獨或渺小感。</p>
+                    <div class="hidden-content text-sm text-slate-300 border-t border-slate-600 pt-3 mt-2">
+                        <strong class="text-cinematic-accent">🎬 實戰範例：</strong><br>
+                        廣闊荒漠中的一個人，或是末日廢墟中的倖存者，直接傳達出無力與孤立無援的情緒。
+                    </div>
+                    <div class="text-center mt-2 text-slate-500 text-xs reveal-hint"><i class="fas fa-chevron-down"></i> 點擊展開範例</div>
+                </div>
+            </div>
+
+            <!-- 角度 -->
+            <h3 class="text-xl font-semibold text-cinematic-accent mb-4 border-l-4 border-cinematic-accent pl-3">攝影角度 (Angle)：權力與地位的暗示</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                <div class="bg-cinematic-card rounded-xl p-6 border border-slate-700">
+                    <h4 class="text-lg font-bold text-white mb-2"><i class="fas fa-arrow-up text-red-400 mr-2"></i>仰角 (Low Angle)</h4>
+                    <p class="text-sm text-slate-300 mb-2">由下往上拍。使主體看起來巨大、具威脅性、充滿力量或威嚴。</p>
+                    <p class="text-xs text-slate-400 bg-slate-900 p-2 rounded border border-slate-700">例：黑幫老大從陰影站起，或超級英雄降落。</p>
+                </div>
+                <div class="bg-cinematic-card rounded-xl p-6 border border-slate-700">
+                    <h4 class="text-lg font-bold text-white mb-2"><i class="fas fa-arrow-down text-blue-400 mr-2"></i>俯角 (High Angle)</h4>
+                    <p class="text-sm text-slate-300 mb-2">由上往下拍。使主體看起來渺小、脆弱、被困住或處於劣勢。</p>
+                    <p class="text-xs text-slate-400 bg-slate-900 p-2 rounded border border-slate-700">例：受害者躲在衣櫃，殺手逼近時的無助感。</p>
+                </div>
+                <div class="bg-cinematic-card rounded-xl p-6 border border-slate-700">
+                    <h4 class="text-lg font-bold text-white mb-2"><i class="fas fa-undo transform -rotate-45 text-purple-400 mr-2"></i>荷蘭角 (Dutch Angle)</h4>
+                    <p class="text-sm text-slate-300 mb-2">畫面刻意傾斜。暗示瘋狂、不安、失控或現實的扭曲。</p>
+                    <p class="text-xs text-slate-400 bg-slate-900 p-2 rounded border border-slate-700">例：角色被下藥、精神崩潰產生暈眩感。</p>
+                </div>
+            </div>
+
+            <!-- 運動 (補回) -->
+            <h3 class="text-xl font-semibold text-cinematic-accent mb-4 border-l-4 border-cinematic-accent pl-3">鏡頭運動 (Movement)：引導視覺與呼吸</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-800 p-5 rounded-lg border border-slate-700 flex flex-col items-center text-center">
+                    <div class="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                        <i class="fas fa-search-plus text-2xl text-cinematic-highlight"></i>
+                    </div>
+                    <h4 class="font-bold text-white mb-2">推鏡頭 (Dolly In)</h4>
+                    <p class="text-sm text-slate-400">攝影機緩緩向主體推進。代表「聚焦」、「發現」和「頓悟」，能將觀眾的注意力牢牢吸入畫面。</p>
+                </div>
+                <div class="bg-slate-800 p-5 rounded-lg border border-slate-700 flex flex-col items-center text-center">
+                    <div class="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                        <i class="fas fa-hand-paper text-2xl text-cinematic-highlight"></i>
+                    </div>
+                    <h4 class="font-bold text-white mb-2">手持攝影 (Handheld)</h4>
+                    <p class="text-sm text-slate-400">畫面帶有不規則晃動。用來營造紀實感、混亂、臨場感，打破電影的精緻感以提升真實度。</p>
+                </div>
+                <div class="bg-slate-800 p-5 rounded-lg border border-slate-700 flex flex-col items-center text-center">
+                    <div class="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                        <i class="fas fa-arrows-alt-h text-2xl text-cinematic-highlight"></i>
+                    </div>
+                    <h4 class="font-bold text-white mb-2">橫搖 (Pan)</h4>
+                    <p class="text-sm text-slate-400">攝影機位置不動，向左或向右轉動。用來連結兩個不同的主體，或是揭示原本在畫布外的新資訊。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 2: 虛構類型 (完整內容還原) ================= -->
+        <section id="sec-fiction" class="tab-content hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">二、 常見虛構電影類型的鏡頭應用</h2>
+                <p class="text-slate-400">不同類型有各自約定俗成的鏡頭語言「配方」。點開查看完整技法。</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- 動作片 -->
+                <div class="border border-slate-700 rounded-xl overflow-hidden bg-slate-800">
+                    <button class="w-full p-5 flex justify-between items-center hover:bg-slate-700 transition" onclick="toggleAccordion('acc-action')">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-fist-raised text-red-500 text-xl w-6"></i>
+                            <span class="text-lg font-bold text-white tracking-wide">動作片 (Action)</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300" id="icon-acc-action"></i>
+                    </button>
+                    <div id="acc-action" class="hidden-content bg-slate-900 p-6 border-t border-slate-700">
+                        <ul class="space-y-4 text-slate-300">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-red-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">快速剪輯與手持攝影 (Shaky Cam)</strong>
+                                    在近身肉搏時，使用手持攝影增加畫面的混亂與物理衝擊力。
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-red-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">跟隨鏡頭 (Tracking Shot)</strong>
+                                    攝影機緊跟著奔跑的主角移動，讓觀眾產生「一起在移動、逃跑」的強烈動態感。
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 恐怖片 (補回) -->
+                <div class="border border-slate-700 rounded-xl overflow-hidden bg-slate-800">
+                    <button class="w-full p-5 flex justify-between items-center hover:bg-slate-700 transition" onclick="toggleAccordion('acc-horror')">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-ghost text-purple-500 text-xl w-6"></i>
+                            <span class="text-lg font-bold text-white tracking-wide">恐怖片 / 驚悚片 (Horror / Thriller)</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300" id="icon-acc-horror"></i>
+                    </button>
+                    <div id="acc-horror" class="hidden-content bg-slate-900 p-6 border-t border-slate-700">
+                        <ul class="space-y-4 text-slate-300">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-purple-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">限制性視角 (Restricted View)</strong>
+                                    故意用門縫或極端的特寫，隱藏畫面邊緣（尤其是主體背後）的資訊，剝奪視覺安全感，讓觀眾始終處於焦慮之中。
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-purple-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">負空間 (Negative Space)</strong>
+                                    將角色放在畫面極端邊緣，留出大片空曠的黑暗背景（負空間），強烈暗示那片黑暗中「有東西」。
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 古裝片 -->
+                <div class="border border-slate-700 rounded-xl overflow-hidden bg-slate-800">
+                    <button class="w-full p-5 flex justify-between items-center hover:bg-slate-700 transition" onclick="toggleAccordion('acc-period')">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-landmark text-yellow-500 text-xl w-6"></i>
+                            <span class="text-lg font-bold text-white tracking-wide">古裝片 / 歷史劇 (Period Drama)</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300" id="icon-acc-period"></i>
+                    </button>
+                    <div id="acc-period" class="hidden-content bg-slate-900 p-6 border-t border-slate-700">
+                        <p class="text-sm text-slate-400 mb-4 pb-2 border-b border-slate-700">核心目標：展現宏大世界觀、宮廷權力階級、東方古典美學的氣韻。</p>
+                        <ul class="space-y-4 text-slate-300">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">大遠景與對稱構圖 (Symmetrical Extreme Long Shot)</strong>
+                                    用來拍攝壯麗的宮殿、朝廷。極度工整的對稱，暗示了皇權的威嚴與不可撼動的階級秩序。
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">緩慢的平移軌道鏡頭 (Slow Tracking Shot)</strong>
+                                    攝影機在迴廊、屏風或重重帳幔之間緩慢平移。這種推拉搖移的平穩感能營造出古典的優雅與深邃。
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">淺景深與特寫 (Shallow DOF on Props)</strong>
+                                    透過特寫精緻的髮簪、茶具或刺繡，配合淺景深虛化背景，強化時代的質感與文化氛圍。
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 戲曲片 -->
+                <div class="border border-slate-700 rounded-xl overflow-hidden bg-slate-800">
+                    <button class="w-full p-5 flex justify-between items-center hover:bg-slate-700 transition" onclick="toggleAccordion('acc-opera')">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-masks-theater text-pink-500 text-xl w-6"></i>
+                            <span class="text-lg font-bold text-white tracking-wide">戲曲片 (Traditional Opera Film)</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300" id="icon-acc-opera"></i>
+                    </button>
+                    <div id="acc-opera" class="hidden-content bg-slate-900 p-6 border-t border-slate-700">
+                        <p class="text-sm text-slate-400 mb-4 pb-2 border-b border-slate-700">核心目標：保留戲曲「唱念做打」的舞台魅力，發揮電影特寫優勢。</p>
+                        <ul class="space-y-4 text-slate-300">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-pink-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">保留身段的全景 (Full Shot for Choreography)</strong>
+                                    當演員進行水袖、翻滾或武打時，攝影機必須退後使用全景，絕對不能隨意切碎畫面，以保持傳統藝術的完整性與韻律。
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-pink-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">「亮相」的急推鏡頭 (Snap Zoom / Fast Push-in)</strong>
+                                    當角色出場或情緒高潮進行「亮相」（定格擺Pose）時，瞬間推近到角色的臉部特寫，捕捉銳利的「眼神光」，將戲劇張力放到最大。
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-pink-400 mt-1 mr-3"></i>
+                                <div>
+                                    <strong class="text-white block mb-1">虛實相生的空鏡頭 (Symbolic B-roll)</strong>
+                                    戲曲講究寫意。電影常插入真實的落花、流水、明月等空鏡頭，來呼應舞台上虛擬的騎馬、行舟動作，將意境具象化。
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 3: 紀實與訪談 (完整內容還原) ================= -->
+        <section id="sec-nonfiction" class="tab-content hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">三、 非虛構紀實與訪談的鏡頭應用</h2>
+                <p class="text-slate-400">這領域的鏡頭不只是美學選擇，更是「倫理」與「信任」的展現。功能在於捕捉真實。</p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- 紀錄片 -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <i class="fas fa-video text-8xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-cinematic-highlight mb-2 flex items-center">
+                        <i class="fas fa-globe-asia mr-3"></i>紀錄片 (Documentary)
+                    </h3>
+                    <p class="text-slate-400 text-sm mb-5">核心目標：捕捉真實、不干預被攝者、建立強烈的臨場感或客觀性。</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                            <h4 class="font-bold text-white mb-2 text-sm">觀察式鏡頭<br>(Fly-on-the-wall)</h4>
+                            <p class="text-xs text-slate-300">攝影機躲在角落，多使用中遠景，不打擾拍攝對象。讓事件自然發生，傳達一種「客觀記錄」的真實感。</p>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                            <h4 class="font-bold text-white mb-2 text-sm">手持跟拍<br>(Run-and-Gun)</h4>
+                            <p class="text-xs text-slate-300">扛著機器跟著被攝者穿梭突發事件。這種無法預測的晃動、失焦再重新對焦的過程，本身就是「真實」的印記。</p>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                            <h4 class="font-bold text-white mb-2 text-sm">焦點游移<br>(Searching Focus)</h4>
+                            <p class="text-xs text-slate-300">在一個長鏡頭中，焦點在不同的人物之間游移尋找（因無排演）。這種「尋找焦點」的動作能增加現場的緊迫感與未知感。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 口述訪談 -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <i class="fas fa-microphone-alt text-8xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-cinematic-highlight mb-2 flex items-center">
+                        <i class="fas fa-comments mr-3"></i>口述訪談 (Oral History / Interview)
+                    </h3>
+                    <p class="text-slate-400 text-sm mb-5">核心目標：傳遞情感、確立場景專業度、引導觀眾注意力。</p>
+
+                    <div class="space-y-4">
+                        <div class="flex flex-col md:flex-row gap-4 bg-slate-900 p-4 rounded border border-slate-700">
+                            <div class="md:w-1/3 border-b md:border-b-0 md:border-r border-slate-700 pb-2 md:pb-0 md:pr-4">
+                                <h4 class="font-bold text-white">會說話的頭<br>(Talking Head)</h4>
+                                <p class="text-xs text-slate-400 mt-1">最標準的訪談鏡頭。通常是胸部以上的「中近景 (Medium Close-Up)」。</p>
+                            </div>
+                            <div class="md:w-2/3">
+                                <h4 class="font-bold text-white mb-1">視線方向 (Eyeline)</h4>
+                                <ul class="text-sm text-slate-300 list-disc pl-4 space-y-1">
+                                    <li><strong class="text-cinematic-highlight">看螢幕外 (Off-camera)：</strong>受訪者看著畫面側邊的訪問者。讓觀眾覺得自己是個「旁聽者」，較客觀自然。</li>
+                                    <li><strong class="text-cinematic-highlight">直視鏡頭 (Direct Address)：</strong>受訪者直視攝影機講話。產生極強的壓迫感或親密感，彷彿直接對觀眾告解。</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                            <h4 class="font-bold text-white mb-2">A/B 雙機位切換 (A-Cam / B-Cam Setup)</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-300">
+                                <div>
+                                    <strong class="text-cinematic-highlight">A機 (主視角)：</strong>正面中景，交代受訪者的面部表情與完整論述。
+                                </div>
+                                <div>
+                                    <strong class="text-cinematic-highlight">B機 (側拍或特寫)：</strong>放在側面拍攝，或<span class="text-white bg-slate-700 px-1 rounded">特寫受訪者正在絞弄的雙手、搓揉的衣角</span>。當說到哽咽處，切換到顫抖的雙手特寫，傳達的情緒往往比拍臉更強烈。
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                            <h4 class="font-bold text-white mb-1">環境肖像 (Environmental Portrait)</h4>
+                            <p class="text-sm text-slate-300">如果訪談對象是畫家，就把地點設在他的凌亂畫室，用廣角帶入背景；背景裡的物件都在幫這個人說故事。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 4: 進階美學 (完整內容還原) ================= -->
+        <section id="sec-advanced" class="tab-content hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">四、 進階敘事技巧與特殊術語</h2>
+                <p class="text-slate-400">當攝影機與「剪輯概念」和「時間操控」結合時，就會產生大師級的電影魔法。</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 長鏡頭 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                        <i class="fas fa-route text-8xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-cinematic-accent mb-3 relative z-10">長鏡頭 (Long Take / Plan Séquence)</h3>
+                    <p class="text-slate-300 mb-4 relative z-10 text-sm">一個<strong>不經過任何剪接</strong>、持續時間異常長（數十秒至數分鐘）的連續鏡頭。</p>
+                    <div class="bg-slate-900/80 p-4 rounded-lg relative z-10 border border-slate-700">
+                        <p class="text-sm text-slate-300">
+                            <strong class="text-white">沉浸感與真實時間：</strong>強迫觀眾與角色經歷「1:1 的真實時間流逝」，無法透過剪接跳過無聊或危險的瞬間，因此極具沉浸感與窒息感。極度考驗劇組極致的走位與配合。
+                        </p>
+                        <hr class="border-slate-700 my-2">
+                        <p class="text-xs text-slate-400"><strong>代表作：</strong>《人類之子》(車內遇襲長鏡頭)、《1917》(全片偽一鏡到底)。</p>
+                    </div>
+                </div>
+
+                <!-- 蒙太奇 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                        <i class="fas fa-layer-group text-8xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-cinematic-accent mb-3 relative z-10">蒙太奇 (Montage)</h3>
+                    <p class="text-slate-300 mb-4 relative z-10 text-sm">源自法文的裝配。將不同時空、不同內容的鏡頭拼貼剪接在一起，創造出 1+1>2 的新意義。</p>
+                    <div class="bg-slate-900/80 p-4 rounded-lg relative z-10 border border-slate-700 space-y-3">
+                        <div>
+                            <h4 class="font-bold text-white text-sm">🎞️ 好萊塢式蒙太奇</h4>
+                            <p class="text-xs text-slate-300">用來<strong>壓縮時間</strong>。如《洛基》中兩分鐘的跑步、打沙包快剪，交代了幾個月的魔鬼特訓。</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-sm">⚔️ 平行蒙太奇 (Cross-cutting)</h4>
+                            <p class="text-xs text-slate-300">交錯剪接兩個同時發生的事件。如《教父》將神聖洗禮與血腥屠殺並置，隱喻靈魂墮落，製造極大對比。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 其他四個特殊術語 Grid (補回) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <!-- 跳接 -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-slate-500 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-step-forward text-emerald-400 mr-2"></i>跳接 (Jump Cut)</h3>
+                    <p class="text-sm text-slate-300">刻意打破連續性的剪輯方式。同一個畫面中的主體突然「跳」了一下（因為剪掉了中間的幾秒）。常被用來表現時間的無情流逝，或是角色焦躁、精神錯亂的心理狀態。</p>
+                </div>
+
+                <!-- 匹配剪輯 -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-slate-500 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-link text-sky-400 mr-2"></i>匹配剪輯 (Match Cut)</h3>
+                    <p class="text-sm text-slate-300">利用兩個鏡頭之間在「形狀、動作或聲音」上的相似性，進行詩意且無縫的過渡。（實例：《2001太空漫遊》中，原始人將骨頭拋向空中，下一秒切換到太空中形狀相似的衛星）。</p>
+                </div>
+                
+                <!-- 場面調度 -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-slate-500 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-chess-board text-indigo-400 mr-2"></i>場面調度 (Mise-en-scène)</h3>
+                    <p class="text-sm text-slate-300">指「放在畫框裡的一切」。包含演員走位、燈光、美術陳設、服裝等。當我們說一個鏡頭場面調度很精采時，是指所有元素在未剪接的狀態下，像交響樂一樣完美配合著攝影機移動。</p>
+                </div>
+
+                <!-- 打破第四面牆 -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-slate-500 transition-colors">
+                    <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-user-ninja text-rose-400 mr-2"></i>打破第四面牆 (Breaking the Fourth Wall)</h3>
+                    <p class="text-sm text-slate-300">角色突然轉頭，<strong>直接看著攝影機鏡頭</strong>對觀眾說話。這會瞬間打破電影的虛構感，把觀眾拉進故事裡成為共犯（實例：《死侍》、《紙牌屋》）。</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 mt-auto">
+        <div class="container mx-auto px-4 text-center text-slate-500 text-sm">
+            <p>技術是骨幹，故事是靈魂。</p>
+            <p class="mt-2">© 2026 影視鏡頭語言互動學習網 (終極完整版). Crafted for Visual Storytellers.</p>
+        </div>
+    </footer>
+
+    <!-- 互動邏輯腳本 -->
+    <script>
+        // --- Tab 導覽列邏輯 ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('block');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-cinematic-accent', 'border-cinematic-accent', 'bg-slate-800');
+                btn.classList.add('text-slate-400', 'border-transparent');
+            });
+            document.getElementById('sec-' + tabId).classList.remove('hidden');
+            document.getElementById('sec-' + tabId).classList.add('block');
+            
+            const activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.remove('text-slate-400', 'border-transparent');
+            activeTab.classList.add('text-cinematic-accent', 'border-cinematic-accent', 'bg-slate-800');
+        }
+
+        // --- 核心維度卡片與手風琴邏輯 ---
+        function toggleCard(card) {
+            const content = card.querySelector('.hidden-content');
+            const hint = card.querySelector('.reveal-hint');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+                hint.innerHTML = '<i class="fas fa-chevron-down"></i> 點擊展開範例';
+                card.classList.remove('border-cinematic-accent');
+            } else {
+                content.style.display = 'block';
+                hint.innerHTML = '<i class="fas fa-chevron-up"></i> 收合';
+                card.classList.add('border-cinematic-accent');
+            }
+        }
+
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id);
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // --- 🎬 鏡頭模擬器邏輯 ---
+        function playSim(type) {
+            const lens = document.getElementById('camera-lens');
+            const fg = document.getElementById('subject-fg');
+            const bg = document.getElementById('subject-bg');
+            const statusText = document.getElementById('active-effect-text');
+            const focusBox = document.getElementById('focus-box');
+            
+            // 1. 停用所有動畫與歸零
+            lens.className = 'absolute inset-0 w-full h-full origin-center transition-camera';
+            lens.style.transform = '';
+            
+            fg.style.filter = 'blur(0px)';
+            bg.style.filter = 'blur(3px)';
+            
+            focusBox.style.transform = 'translate(-50%, -50%) scale(1)';
+            focusBox.style.left = '42%'; // 預設對焦在前方的A角
+            focusBox.style.top = '70%';
+
+            // 強制重繪 (Reflow) 以重啟 CSS Transition
+            void lens.offsetWidth; 
+
+            // 2. 應用選定的效果
+            if (type === 'dolly') {
+                statusText.innerText = "推鏡頭 (Dolly In)";
+                lens.style.transform = "scale(1.6) translateY(10%)";
+            } 
+            else if (type === 'pan') {
+                statusText.innerText = "橫搖 (Pan Right)";
+                lens.style.transform = "scale(1.1) translateX(-15%)";
+            } 
+            else if (type === 'dutch') {
+                statusText.innerText = "荷蘭角 (Dutch Angle)";
+                lens.style.transform = "scale(1.2) rotate(15deg)";
+            } 
+            else if (type === 'handheld') {
+                statusText.innerText = "手持攝影 (Handheld)";
+                lens.classList.remove('transition-camera');
+                lens.classList.add('anim-handheld');
+            } 
+            else if (type === 'rack') {
+                statusText.innerText = "焦點游移 (Rack Focus)";
+                // A角變模糊
+                fg.style.filter = 'blur(6px)';
+                // B角變清晰
+                bg.style.filter = 'blur(0px)';
+                // 移動焦點指示框到 B 角
+                focusBox.style.left = '70%';
+                focusBox.style.top = '60%';
+                focusBox.style.transform = 'translate(-50%, -50%) scale(0.8)';
+            } 
+            else if (type === 'reset') {
+                statusText.innerText = "標準視角 (Normal)";
+            }
+        }
+
+        // --- 模擬錄影時間計時器 ---
+        setInterval(() => {
+            const secEl = document.getElementById('tc-sec');
+            if(secEl) {
+                let sec = parseInt(secEl.innerText, 10);
+                sec++;
+                secEl.innerText = sec.toString().padStart(2, '0');
+            }
+        }, 1000);
+
+    </script>
+</body>
+</html>
